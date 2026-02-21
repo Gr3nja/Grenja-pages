@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grenja Search</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+    <!-- ヘッダー -->
+    <header id="site-header">
+        <a class="header-logo" href="index.html">Grenja</a>
+        <button class="header-home-btn" onclick="location.href='index.html'">← ホーム</button>
+        <span class="header-meta" id="index-status">読み込み中...</span>
+    </header>
+
+    <!-- ホーム画面 -->
+    <main id="home-view">
+        <div class="home-inner">
+            <h1 class="logo-title">Grenja</h1>
+            <p class="logo-sub">技術系サイト検索エンジン</p>
+
+            <div class="search-box">
+                <input type="text" id="main-input" placeholder="キーワードを入力..." autocomplete="off">
+                <button id="main-btn">検索</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- 検索結果画面 -->
+    <div id="results-view" class="hidden">
+        <div class="results-meta" id="results-meta"></div>
+        <div id="results-list"></div>
+        <div id="no-results" class="hidden">該当する結果が見つかりませんでした。</div>
+    </div>
+
+    <footer id="site-footer">
+        <span>Atlas Search &mdash; Powered by <a href="https://github.com" target="_blank">GitHub Pages</a></span>
+    </footer>
+
+    <script src="search.js"></script>
+</body>
+
+</html>

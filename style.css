@@ -1,0 +1,265 @@
+/* ── リセット & 変数 ── */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+:root {
+    --bg: #ffffff;
+    --surface: #f5f5f5;
+    --border: #e8e8e8;
+    --accent: #333333;
+    --accent2: #555555;
+    --text: #222222;
+    --muted: #888888;
+    --url: #0066cc;
+    --radius: 8px;
+}
+
+body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.hidden {
+    display: none !important;
+}
+
+/* ── ヘッダー ── */
+header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 24px;
+    border-bottom: none;
+    background: #222222;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.header-logo {
+    font-size: 1.1rem;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    color: #ffffff;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+.header-home-btn {
+    padding: 6px 12px;
+    background: transparent;
+    border: 1px solid #666666;
+    border-radius: 4px;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.header-home-btn:hover {
+    background: #333333;
+    border-color: #ffffff;
+}
+
+.header-meta {
+    margin-left: auto;
+    font-size: 0.75rem;
+    color: #aaaaaa;
+    font-family: 'DM Mono', monospace;
+    white-space: nowrap;
+}
+
+/* ── ホーム画面 ── */
+#home-view {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: url('aa.jpg') center / cover no-repeat;
+    position: relative;
+}
+
+#home-view::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.85);
+    pointer-events: none;
+}
+
+.home-inner {
+    text-align: center;
+    width: 100%;
+    max-width: 550px;
+    padding: 40px 24px;
+    position: relative;
+    z-index: 1;
+}
+
+.logo-title {
+    font-size: clamp(2rem, 8vw, 3.5rem);
+    font-weight: 700;
+    letter-spacing: -1px;
+    color: #222222;
+    line-height: 1.1;
+    margin-bottom: 8px;
+}
+
+.logo-sub {
+    font-size: 0.9rem;
+    color: #666666;
+    margin-bottom: 32px;
+    letter-spacing: 0.03em;
+    font-weight: 400;
+}
+
+/* ── 検索ボックス（ホーム） ── */
+.search-box {
+    display: flex;
+    gap: 6px;
+    background: #ffffff;
+    border: 2px solid #222222;
+    border-radius: 5px;
+    padding: 8px 10px 8px 14px;
+    transition: box-shadow 0.2s;
+    align-items: center;
+}
+
+.search-box:focus-within {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.search-box input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #222222;
+    font-family: inherit;
+    font-size: 0.95rem;
+}
+
+.search-box input::placeholder {
+    color: #cccccc;
+}
+
+.search-box button {
+    padding: 7px 18px;
+    background: #222222;
+    border: none;
+    border-radius: 3px;
+    color: #ffffff;
+    font-family: inherit;
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+    white-space: nowrap;
+}
+
+.search-box button:hover {
+    background: #333333;
+}
+
+/* ── 検索結果 ── */
+#results-view {
+    flex: 1;
+    max-width: 650px;
+    width: 100%;
+    margin: 0 auto;
+    padding: 28px 20px;
+}
+
+.results-meta {
+    font-size: 0.8rem;
+    color: #888888;
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 20px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #e8e8e8;
+}
+
+/* 各結果カード */
+.result-card {
+    padding: 14px 0;
+    border-bottom: 1px solid #f0f0f0;
+    animation: fadeUp 0.25s ease both;
+}
+
+.result-card:last-child {
+    border-bottom: none;
+}
+
+@keyframes fadeUp {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.result-url {
+    font-size: 0.75rem;
+    color: #0066cc;
+    font-family: 'DM Mono', monospace;
+    margin-bottom: 4px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.result-title {
+    font-size: 0.98rem;
+    font-weight: 500;
+    color: #222222;
+    text-decoration: none;
+    line-height: 1.5;
+    display: block;
+    transition: color 0.15s;
+}
+
+.result-title:hover {
+    color: #0066cc;
+    text-decoration: underline;
+}
+
+/* 結果なし */
+#no-results {
+    text-align: center;
+    color: #888888;
+    margin-top: 60px;
+    font-size: 0.9rem;
+}
+
+/* ── フッター ── */
+footer {
+    text-align: center;
+    padding: 20px;
+    font-size: 0.75rem;
+    color: #999999;
+    border-top: 1px solid #e8e8e8;
+    background: #fafafa;
+}
+
+footer a {
+    color: #0066cc;
+    text-decoration: none;
+}
+
+footer a:hover {
+    text-decoration: underline;
+}
