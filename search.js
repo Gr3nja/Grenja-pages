@@ -236,6 +236,8 @@ function doSearch(query) {
     if (!query.trim()) return;
     const results = search(query);
     renderResults(results, query);
+    // 結果ページの検索バーにも反映
+    document.getElementById("results-input").value = query;
     // URLにクエリを反映（ブラウザの戻るボタンで戻れるように）
     history.pushState({ query }, "", `?q=${encodeURIComponent(query)}`);
 }
@@ -259,6 +261,16 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // ホームのEnterキー
     document.getElementById("main-input").addEventListener("keydown", e => {
+        if (e.key === "Enter") doSearch(e.target.value);
+    });
+
+    // 結果ページの検索ボタン
+    document.getElementById("results-btn").addEventListener("click", () => {
+        doSearch(document.getElementById("results-input").value);
+    });
+
+    // 結果ページのEnterキー
+    document.getElementById("results-input").addEventListener("keydown", e => {
         if (e.key === "Enter") doSearch(e.target.value);
     });
 
