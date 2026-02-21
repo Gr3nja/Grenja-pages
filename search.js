@@ -230,7 +230,7 @@ function renderPagination(totalPages, currentPageNum) {
             paginationEl.appendChild(makePageBtn(i));
         }
     } else {
-        const delta = 2; // 現在ページの前後に表示する数
+        const delta = 2;
         const pages = new Set();
         pages.add(1);
         pages.add(totalPages);

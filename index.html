@@ -27,7 +27,7 @@
     <main id="home-view">
         <div class="home-inner">
             <h1 class="logo-title">Grenja</h1>
-            <p class="logo-sub">技術系サイト検索エンジン</p>
+            <p class="logo-sub">技術系サイト専門の検索エンジン</p>
 
             <div class="search-box">
                 <input type="text" id="main-input" placeholder="キーワードを入力..." autocomplete="off">
@@ -38,6 +38,12 @@
 
     <!-- 検索結果画面 -->
     <div id="results-view" class="hidden">
+        <div class="results-search-bar">
+            <div class="search-box search-box--sm">
+                <input type="text" id="results-input" placeholder="キーワードを入力..." autocomplete="off">
+                <button id="results-btn">検索</button>
+            </div>
+        </div>
         <div class="results-meta" id="results-meta"></div>
         <div id="results-list"></div>
         <div id="pagination" class="pagination"></div>
