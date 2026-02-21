@@ -2,7 +2,7 @@
 // 設定：別リポジトリのindex.jsonのURLに変更してね
 // 例: https://raw.githubusercontent.com/ユーザー名/リポジトリ名/main/index.json
 // =============================================
-const INDEX_URL = "https://raw.githubusercontent.com/Gr3nja/Grenja-crawler/main/index.json";
+const INDEX_URL = "https://raw.githubusercontent.com/Gr3nja/Grenja-crawler/main/index.csv";
 // =============================================
 
 let searchIndex = [];
@@ -21,7 +21,7 @@ async function loadIndex() {
         statusEl.textContent = `${searchIndex.length} ページ読み込み済み`;
     } catch (e) {
         statusEl.textContent = "読み込み失敗";
-        console.error("index.json の読み込みに失敗しました:", e);
+        console.error("index.csv の読み込みに失敗しました:", e);
     }
 }
 
