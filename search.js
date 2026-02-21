@@ -6,6 +6,10 @@ const INDEX_URL = "https://raw.githubusercontent.com/Gr3nja/Grenja-crawler/main/
 // =============================================
 
 let searchIndex = [];
+let currentResults = [];
+let currentQuery = "";
+let currentPage = 1;
+const RESULTS_PER_PAGE = 20;
 
 // ── index.json を別リポジトリから読み込む ──
 async function loadIndex() {
@@ -45,18 +49,25 @@ function search(query) {
 }
 
 // ── 結果を表示 ──
-function renderResults(results, query) {
+function renderResults(results, query, page = 1) {
     const homeView = document.getElementById("home-view");
     const resultsView = document.getElementById("results-view");
     const resultsList = document.getElementById("results-list");
     const noResults = document.getElementById("no-results");
     const metaEl = document.getElementById("results-meta");
+    const paginationEl = document.getElementById("pagination");
+
+    // 現在の検索結果とページを保存
+    currentResults = results;
+    currentQuery = query;
+    currentPage = page;
 
     // ホーム非表示 → 結果表示
     homeView.classList.add("hidden");
     resultsView.classList.remove("hidden");
 
     resultsList.innerHTML = "";
+    paginationEl.innerHTML = "";
     noResults.classList.add("hidden");
 
     if (results.length === 0) {
@@ -67,7 +78,14 @@ function renderResults(results, query) {
 
     metaEl.textContent = `"${query}" の検索結果：約 ${results.length} 件`;
 
-    results.forEach((item, i) => {
+    // ページネーション計算
+    const totalPages = Math.ceil(results.length / RESULTS_PER_PAGE);
+    const startIndex = (page - 1) * RESULTS_PER_PAGE;
+    const endIndex = startIndex + RESULTS_PER_PAGE;
+    const pageResults = results.slice(startIndex, endIndex);
+
+    // 現在ページの結果を表示
+    pageResults.forEach((item, i) => {
         const card = document.createElement("div");
         card.className = "result-card";
         card.style.animationDelay = `${i * 30}ms`;
@@ -87,6 +105,55 @@ function renderResults(results, query) {
         card.appendChild(titleEl);
         resultsList.appendChild(card);
     });
+
+    // ページネーションボタンを表示
+    if (totalPages > 1) {
+        renderPagination(totalPages, page);
+    }
+}
+
+// ── ページネーション表示 ──
+function renderPagination(totalPages, currentPageNum) {
+    const paginationEl = document.getElementById("pagination");
+    paginationEl.innerHTML = "";
+
+    // 前ページボタン
+    const prevBtn = document.createElement("button");
+    prevBtn.textContent = "前へ";
+    prevBtn.disabled = currentPageNum === 1;
+    prevBtn.addEventListener("click", () => {
+        if (currentPageNum > 1) {
+            renderResults(currentResults, currentQuery, currentPageNum - 1);
+            window.scrollTo(0, 0);
+        }
+    });
+    paginationEl.appendChild(prevBtn);
+
+    // ページ番号ボタン
+    for (let i = 1; i <= totalPages; i++) {
+        const pageBtn = document.createElement("button");
+        pageBtn.textContent = i;
+        if (i === currentPageNum) {
+            pageBtn.classList.add("active");
+        }
+        pageBtn.addEventListener("click", () => {
+            renderResults(currentResults, currentQuery, i);
+            window.scrollTo(0, 0);
+        });
+        paginationEl.appendChild(pageBtn);
+    }
+
+    // 次ページボタン
+    const nextBtn = document.createElement("button");
+    nextBtn.textContent = "次へ";
+    nextBtn.disabled = currentPageNum === totalPages;
+    nextBtn.addEventListener("click", () => {
+        if (currentPageNum < totalPages) {
+            renderResults(currentResults, currentQuery, currentPageNum + 1);
+            window.scrollTo(0, 0);
+        }
+    });
+    paginationEl.appendChild(nextBtn);
 }
 
 // ── 検索を実行 ──
@@ -103,7 +170,7 @@ function goHome() {
     document.getElementById("home-view").classList.remove("hidden");
     document.getElementById("results-view").classList.add("hidden");
     document.getElementById("main-input").value = "";
-    history.pushState({}, "", "./");
+    history.pushState({ view: "home" }, "", "./");
 }
 
 // ── イベント登録 ──
@@ -130,4 +197,17 @@ document.addEventListener("DOMContentLoaded", async () => {
     const params = new URLSearchParams(location.search);
     const q = params.get("q");
     if (q) doSearch(q);
+});
+
+// ── ブラウザバック対応 ──
+window.addEventListener("popstate", (e) => {
+    if (e.state && e.state.view === "home") {
+        goHome();
+    } else if (!document.getElementById("home-view").classList.contains("hidden")) {
+        // すでにホーム表示の場合は何もしない
+        return;
+    } else {
+        // 検索結果表示中にバックボタンでホームに戻る
+        goHome();
+    }
 });

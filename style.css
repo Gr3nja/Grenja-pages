@@ -54,21 +54,23 @@ header {
     white-space: nowrap;
 }
 
-.header-home-btn {
-    padding: 6px 12px;
+.header-contact-btn {
+    padding: 6px 16px;
     background: transparent;
-    border: 1px solid #666666;
+    border: 1px solid #888888;
     border-radius: 4px;
     color: #ffffff;
     font-family: inherit;
     font-size: 0.85rem;
+    font-weight: 500;
     cursor: pointer;
     transition: all 0.2s;
 }
 
-.header-home-btn:hover {
+.header-contact-btn:hover {
     background: #333333;
     border-color: #ffffff;
+    color: #ffffff;
 }
 
 .header-meta {
@@ -243,6 +245,43 @@ header {
     color: #888888;
     margin-top: 60px;
     font-size: 0.9rem;
+}
+
+/* ページネーション */
+.pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 40px;
+    margin-bottom: 20px;
+}
+
+.pagination button {
+    padding: 8px 12px;
+    background: #f5f5f5;
+    border: 1px solid #e8e8e8;
+    border-radius: 4px;
+    color: #222222;
+    font-family: inherit;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pagination button:hover {
+    background: #eeeeee;
+    border-color: #222222;
+}
+
+.pagination button.active {
+    background: #222222;
+    color: #ffffff;
+    border-color: #222222;
+}
+
+.pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
 }
 
 /* ── フッター ── */
