@@ -100,16 +100,27 @@ function search(query) {
             const title = (item.title || "").toLowerCase();
             const url = (item.url || "").toLowerCase();
 
-            // キーワードが何個マッチするかスコア化
+            // キーワードがタイトル／URLに何個マッチするか
             let score = 0;
+            let titleMatch = false;
+
             for (const kw of keywords) {
-                if (title.includes(kw)) score += 3;  // タイトルマッチは重み大
+                if (title.includes(kw)) {
+                    score += 3;           // タイトルは重み大
+                    titleMatch = true;    // １つでもヒットすればフラグを立てる
+                }
                 if (url.includes(kw)) score += 1;
             }
-            return { ...item, score };
+            return { ...item, score, titleMatch };
         })
         .filter(item => item.score > 0)
-        .sort((a, b) => b.score - a.score);
+        .sort((a, b) => {
+            // タイトルにマッチしたものを優先
+            if (a.titleMatch && !b.titleMatch) return -1;
+            if (!a.titleMatch && b.titleMatch) return 1;
+            // それ以外はスコアで降順
+            return b.score - a.score;
+        });
 }
 
 // ── 結果を表示 ──
