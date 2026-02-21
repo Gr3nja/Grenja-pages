@@ -1,6 +1,6 @@
 // =============================================
-// 設定：別リポジトリのindex.jsonのURLに変更してね
-// 例: https://raw.githubusercontent.com/ユーザー名/リポジトリ名/main/index.json
+// 設定：別リポジトリのindex.csvのURLに変更してね
+// 例: https://raw.githubusercontent.com/ユーザー名/リポジトリ名/main/index.csv
 // =============================================
 const INDEX_URL = "https://raw.githubusercontent.com/Gr3nja/Grenja-crawler/main/index.csv";
 // =============================================
@@ -11,13 +11,77 @@ let currentQuery = "";
 let currentPage = 1;
 const RESULTS_PER_PAGE = 20;
 
-// ── index.json を別リポジトリから読み込む ──
+// ── シンプルな CSV パーサ ──
+// 1 行目をヘッダとみなし、オブジェクトの配列を返す。
+// ダブルクォートで囲まれたカンマや改行、"" のエスケープを処理。
+function parseCSV(text) {
+    const rows = [];
+    let row = [];
+    let field = "";
+    let i = 0;
+    let inQuotes = false;
+
+    while (i < text.length) {
+        const c = text[i];
+
+        if (c === '"') {
+            if (inQuotes && text[i + 1] === '"') {
+                field += '"';   // "" → "
+                i += 2;
+                continue;
+            }
+            inQuotes = !inQuotes;
+            i++;
+            continue;
+        }
+
+        if (c === ',' && !inQuotes) {
+            row.push(field);
+            field = "";
+            i++;
+            continue;
+        }
+
+        if ((c === '\r' || c === '\n') && !inQuotes) {
+            row.push(field);
+            field = "";
+            rows.push(row);
+            row = [];
+            if (c === '\r' && text[i + 1] === '\n') i++;
+            i++;
+            continue;
+        }
+
+        field += c;
+        i++;
+    }
+
+    if (field !== "" || inQuotes) {
+        row.push(field);
+    }
+    if (row.length) rows.push(row);
+
+    if (rows.length === 0) return [];
+
+    const headers = rows.shift().map(h => h.trim());
+    return rows.map(r => {
+        const obj = {};
+        headers.forEach((h, idx) => {
+            obj[h] = r[idx] !== undefined ? r[idx] : "";
+        });
+        return obj;
+    });
+}
+
+// ── index.csv を別リポジトリから読み込む ──
 async function loadIndex() {
     const statusEl = document.getElementById("index-status");
     try {
         const res = await fetch(INDEX_URL);
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        searchIndex = await res.json();
+        const text = await res.text();
+        // JSON.parse の代わりに CSV をパース
+        searchIndex = parseCSV(text);
         statusEl.textContent = `${searchIndex.length} ページ読み込み済み`;
     } catch (e) {
         statusEl.textContent = "読み込み失敗";
