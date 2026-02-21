@@ -15,7 +15,10 @@
 
     <!-- ヘッダー -->
     <header id="site-header">
-        <a class="header-logo" href="index.html">Grenja</a>
+        <a class="header-logo" href="index.html">
+            <img src="logo.jpg" alt="Grenja logo" class="header-logo-img">
+            Grenja
+        </a>
         <span class="header-meta" id="index-status">読み込み中...</span>
         <a class="header-contact-btn" href="https://discord.gg/HpPVgD4pVU" target="_blank">Contact</a>
     </header>
@@ -35,12 +38,6 @@
 
     <!-- 検索結果画面 -->
     <div id="results-view" class="hidden">
-        <div class="results-search-bar">
-            <div class="search-box search-box--sm">
-                <input type="text" id="results-input" placeholder="キーワードを入力..." autocomplete="off">
-                <button id="results-btn">検索</button>
-            </div>
-        </div>
         <div class="results-meta" id="results-meta"></div>
         <div id="results-list"></div>
         <div id="pagination" class="pagination"></div>

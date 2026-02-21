@@ -100,25 +100,27 @@ function search(query) {
             const title = (item.title || "").toLowerCase();
             const url = (item.url || "").toLowerCase();
 
-            // キーワードがタイトル／URLに何個マッチするか
             let score = 0;
-            let titleMatch = false;
+            let titleMatchCount = 0;
 
             for (const kw of keywords) {
                 if (title.includes(kw)) {
-                    score += 3;           // タイトルは重み大
-                    titleMatch = true;    // １つでもヒットすればフラグを立てる
+                    score += 3;
+                    titleMatchCount++;
                 }
                 if (url.includes(kw)) score += 1;
             }
-            return { ...item, score, titleMatch };
+
+            // 2=全キーワードがタイトルにマッチ / 1=一部マッチ / 0=マッチなし
+            const titleTier = titleMatchCount === keywords.length ? 2
+                : titleMatchCount > 0 ? 1
+                    : 0;
+
+            return { ...item, score, titleTier };
         })
         .filter(item => item.score > 0)
         .sort((a, b) => {
-            // タイトルにマッチしたものを優先
-            if (a.titleMatch && !b.titleMatch) return -1;
-            if (!a.titleMatch && b.titleMatch) return 1;
-            // それ以外はスコアで降順
+            if (b.titleTier !== a.titleTier) return b.titleTier - a.titleTier;
             return b.score - a.score;
         });
 }
@@ -192,6 +194,24 @@ function renderPagination(totalPages, currentPageNum) {
     const paginationEl = document.getElementById("pagination");
     paginationEl.innerHTML = "";
 
+    function makePageBtn(num) {
+        const btn = document.createElement("button");
+        btn.textContent = num;
+        if (num === currentPageNum) btn.classList.add("active");
+        btn.addEventListener("click", () => {
+            renderResults(currentResults, currentQuery, num);
+            window.scrollTo(0, 0);
+        });
+        return btn;
+    }
+
+    function makeEllipsis() {
+        const span = document.createElement("span");
+        span.textContent = "...";
+        span.className = "pagination-ellipsis";
+        return span;
+    }
+
     // 前ページボタン
     const prevBtn = document.createElement("button");
     prevBtn.textContent = "前へ";
@@ -204,18 +224,26 @@ function renderPagination(totalPages, currentPageNum) {
     });
     paginationEl.appendChild(prevBtn);
 
-    // ページ番号ボタン
-    for (let i = 1; i <= totalPages; i++) {
-        const pageBtn = document.createElement("button");
-        pageBtn.textContent = i;
-        if (i === currentPageNum) {
-            pageBtn.classList.add("active");
+    // ページ番号（10以下は全表示、11以上は省略）
+    if (totalPages <= 10) {
+        for (let i = 1; i <= totalPages; i++) {
+            paginationEl.appendChild(makePageBtn(i));
         }
-        pageBtn.addEventListener("click", () => {
-            renderResults(currentResults, currentQuery, i);
-            window.scrollTo(0, 0);
-        });
-        paginationEl.appendChild(pageBtn);
+    } else {
+        const delta = 2; // 現在ページの前後に表示する数
+        const pages = new Set();
+        pages.add(1);
+        pages.add(totalPages);
+        for (let i = currentPageNum - delta; i <= currentPageNum + delta; i++) {
+            if (i >= 1 && i <= totalPages) pages.add(i);
+        }
+        const sorted = [...pages].sort((a, b) => a - b);
+        let prev = 0;
+        for (const p of sorted) {
+            if (p - prev > 1) paginationEl.appendChild(makeEllipsis());
+            paginationEl.appendChild(makePageBtn(p));
+            prev = p;
+        }
     }
 
     // 次ページボタン
