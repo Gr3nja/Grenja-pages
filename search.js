@@ -11,85 +11,167 @@ let currentQuery = "";
 let currentPage = 1;
 const RESULTS_PER_PAGE = 20;
 
-// ── シンプルな CSV パーサ ──
-// 1 行目をヘッダとみなし、オブジェクトの配列を返す。
-// ダブルクォートで囲まれたカンマや改行、"" のエスケープを処理。
-function parseCSV(text) {
-    const rows = [];
-    let row = [];
-    let field = "";
-    let i = 0;
-    let inQuotes = false;
 
-    while (i < text.length) {
-        const c = text[i];
+// =============================================
+// ── エラーページへリダイレクト ──
+// =============================================
 
-        if (c === '"') {
-            if (inQuotes && text[i + 1] === '"') {
-                field += '"';   // "" → "
-                i += 2;
-                continue;
-            }
-            inQuotes = !inQuotes;
-            i++;
-            continue;
-        }
-
-        if (c === ',' && !inQuotes) {
-            row.push(field);
-            field = "";
-            i++;
-            continue;
-        }
-
-        if ((c === '\r' || c === '\n') && !inQuotes) {
-            row.push(field);
-            field = "";
-            rows.push(row);
-            row = [];
-            if (c === '\r' && text[i + 1] === '\n') i++;
-            i++;
-            continue;
-        }
-
-        field += c;
-        i++;
-    }
-
-    if (field !== "" || inQuotes) {
-        row.push(field);
-    }
-    if (row.length) rows.push(row);
-
-    if (rows.length === 0) return [];
-
-    const headers = rows.shift().map(h => h.trim());
-    return rows.map(r => {
-        const obj = {};
-        headers.forEach((h, idx) => {
-            obj[h] = r[idx] !== undefined ? r[idx] : "";
-        });
-        return obj;
-    });
+/**
+ * error.html へ遷移する
+ * @param {string} code  例: "CORSError"
+ * @param {string} desc  例: "異なるオリジンからのアクセスが拒否されました"
+ */
+function redirectToError(code, desc) {
+    const params = new URLSearchParams({ code, desc });
+    location.href = `error.html?${params.toString()}`;
 }
 
+
+// ── fetch エラーを CORS / 接続失敗 に振り分ける ──
+function handleFetchError(e) {
+    const msg = (e?.message || "").toLowerCase();
+
+    // CORSエラー：オンラインなのに fetch が失敗した場合
+    if (
+        msg.includes("cors") ||
+        msg.includes("cross-origin") ||
+        msg.includes("blocked") ||
+        (msg.includes("failed to fetch") && navigator.onLine)
+    ) {
+        redirectToError(
+            "CORSError",
+            "異なるオリジンからのアクセスが拒否されました。\nとりあえず面倒くさいので待機してください"
+        );
+        return;
+    }
+
+    // 接続失敗：オフライン・DNS解決失敗など
+    redirectToError(
+        "ConnectionError",
+        "サーバーへの接続に失敗しました。インターネット接続を確認してください。"
+    );
+}
+
+
+// =============================================
+// ── CSV パーサ ──
+// =============================================
+function parseCSV(text) {
+
+    // 文字化け検出：U+FFFD（置換文字）が含まれていたら EncodingError
+    if (text.includes("\uFFFD")) {
+        redirectToError(
+            "EncodingError",
+            "とりあえず面倒くさいので待機してください。"
+        );
+        return [];
+    }
+
+    try {
+        const rows = [];
+        let row = [];
+        let field = "";
+        let i = 0;
+        let inQuotes = false;
+
+        while (i < text.length) {
+            const c = text[i];
+
+            if (c === '"') {
+                if (inQuotes && text[i + 1] === '"') { field += '"'; i += 2; continue; }
+                inQuotes = !inQuotes; i++; continue;
+            }
+            if (c === ',' && !inQuotes) { row.push(field); field = ""; i++; continue; }
+            if ((c === '\r' || c === '\n') && !inQuotes) {
+                row.push(field); field = "";
+                rows.push(row); row = [];
+                if (c === '\r' && text[i + 1] === '\n') i++;
+                i++; continue;
+            }
+            field += c; i++;
+        }
+
+        if (field !== "" || inQuotes) row.push(field);
+        if (row.length) rows.push(row);
+
+        if (rows.length === 0) {
+            redirectToError("ParseError", "CSVファイルがお前の頭レベルで空です。\n開発者に問い合わせてください。");
+            return [];
+        }
+
+        const headers = rows.shift().map(h => h.trim());
+
+        // 必須カラム確認
+        if (!headers.includes("url") || !headers.includes("title")) {
+            redirectToError(
+                "ParseError",
+                `CSVに必須カラム "url" または "title" が見つかりません。(検出カラム: ${headers.join(", ")})`
+            );
+            return [];
+        }
+
+        return rows.map(r => {
+            const obj = {};
+            headers.forEach((h, idx) => { obj[h] = r[idx] !== undefined ? r[idx] : ""; });
+            return obj;
+        });
+
+    } catch (e) {
+        redirectToError("ParseError", `CSVの解析中にエラーが発生しました。(${e.message})`);
+        return [];
+    }
+}
+
+
+// =============================================
 // ── index.csv を別リポジトリから読み込む ──
+// =============================================
 async function loadIndex() {
     const statusEl = document.getElementById("index-status");
+    statusEl.textContent = "読み込み中...";
+
+    // ① fetch 実行
+    let res;
     try {
-        const res = await fetch(INDEX_URL);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        const text = await res.text();
-        // JSON.parse の代わりに CSV をパース
-        searchIndex = parseCSV(text);
-        statusEl.textContent = `${searchIndex.length} ページ読み込み済み`;
+        res = await fetch(INDEX_URL);
     } catch (e) {
-        statusEl.textContent = "読み込み失敗";
-        console.error("index.csv の読み込みに失敗しました:", e);
+        handleFetchError(e);   // → error.html へリダイレクト
+        return;
     }
+
+    // ② HTTP ステータス確認
+    if (!res.ok) {
+        redirectToError(
+            "BrainError",
+            `あなたの脳細胞がいくつか死んでます。(ステータス: ${res.status}) \nエラーの改善のために待つか、頭の病院に行くことを推奨します。`
+        );
+        return;
+    }
+
+    // ③ テキスト取得
+    let text;
+    try {
+        text = await res.text();
+    } catch (e) {
+        redirectToError(
+            "EncodingError",
+            "あなたの目が悪いのでファイルの読み取りに失敗しました。\nContactからGr3njaに言ってください。"
+        );
+        return;
+    }
+
+    // ④ CSV パース（エラー時はパーサ内でリダイレクト）
+    searchIndex = parseCSV(text);
+
+    statusEl.textContent = searchIndex.length > 0
+        ? `${searchIndex.length} ページ読み込み済み`
+        : "データが空です";
 }
 
+
+// =============================================
 // ── 検索ロジック ──
+// =============================================
 function search(query) {
     if (!query.trim()) return [];
 
@@ -104,17 +186,12 @@ function search(query) {
             let titleMatchCount = 0;
 
             for (const kw of keywords) {
-                if (title.includes(kw)) {
-                    score += 3;
-                    titleMatchCount++;
-                }
+                if (title.includes(kw)) { score += 3; titleMatchCount++; }
                 if (url.includes(kw)) score += 1;
             }
 
-            // 2=全キーワードがタイトルにマッチ / 1=一部マッチ / 0=マッチなし
             const titleTier = titleMatchCount === keywords.length ? 2
-                : titleMatchCount > 0 ? 1
-                    : 0;
+                : titleMatchCount > 0 ? 1 : 0;
 
             return { ...item, score, titleTier };
         })
@@ -125,6 +202,7 @@ function search(query) {
         });
 }
 
+
 // ── 結果を表示 ──
 function renderResults(results, query, page = 1) {
     const homeView = document.getElementById("home-view");
@@ -134,12 +212,10 @@ function renderResults(results, query, page = 1) {
     const metaEl = document.getElementById("results-meta");
     const paginationEl = document.getElementById("pagination");
 
-    // 現在の検索結果とページを保存
     currentResults = results;
     currentQuery = query;
     currentPage = page;
 
-    // ホーム非表示 → 結果表示
     homeView.classList.add("hidden");
     resultsView.classList.remove("hidden");
 
@@ -155,13 +231,10 @@ function renderResults(results, query, page = 1) {
 
     metaEl.textContent = `"${query}" の検索結果：約 ${results.length} 件`;
 
-    // ページネーション計算
     const totalPages = Math.ceil(results.length / RESULTS_PER_PAGE);
     const startIndex = (page - 1) * RESULTS_PER_PAGE;
-    const endIndex = startIndex + RESULTS_PER_PAGE;
-    const pageResults = results.slice(startIndex, endIndex);
+    const pageResults = results.slice(startIndex, startIndex + RESULTS_PER_PAGE);
 
-    // 現在ページの結果を表示
     pageResults.forEach((item, i) => {
         const card = document.createElement("div");
         card.className = "result-card";
@@ -183,11 +256,9 @@ function renderResults(results, query, page = 1) {
         resultsList.appendChild(card);
     });
 
-    // ページネーションボタンを表示
-    if (totalPages > 1) {
-        renderPagination(totalPages, page);
-    }
+    if (totalPages > 1) renderPagination(totalPages, page);
 }
+
 
 // ── ページネーション表示 ──
 function renderPagination(totalPages, currentPageNum) {
@@ -212,7 +283,6 @@ function renderPagination(totalPages, currentPageNum) {
         return span;
     }
 
-    // 前ページボタン
     const prevBtn = document.createElement("button");
     prevBtn.textContent = "前へ";
     prevBtn.disabled = currentPageNum === 1;
@@ -224,16 +294,11 @@ function renderPagination(totalPages, currentPageNum) {
     });
     paginationEl.appendChild(prevBtn);
 
-    // ページ番号（10以下は全表示、11以上は省略）
     if (totalPages <= 10) {
-        for (let i = 1; i <= totalPages; i++) {
-            paginationEl.appendChild(makePageBtn(i));
-        }
+        for (let i = 1; i <= totalPages; i++) paginationEl.appendChild(makePageBtn(i));
     } else {
         const delta = 2;
-        const pages = new Set();
-        pages.add(1);
-        pages.add(totalPages);
+        const pages = new Set([1, totalPages]);
         for (let i = currentPageNum - delta; i <= currentPageNum + delta; i++) {
             if (i >= 1 && i <= totalPages) pages.add(i);
         }
@@ -246,7 +311,6 @@ function renderPagination(totalPages, currentPageNum) {
         }
     }
 
-    // 次ページボタン
     const nextBtn = document.createElement("button");
     nextBtn.textContent = "次へ";
     nextBtn.disabled = currentPageNum === totalPages;
@@ -259,16 +323,16 @@ function renderPagination(totalPages, currentPageNum) {
     paginationEl.appendChild(nextBtn);
 }
 
+
 // ── 検索を実行 ──
 function doSearch(query) {
     if (!query.trim()) return;
     const results = search(query);
     renderResults(results, query);
-    // 結果ページの検索バーにも反映
     document.getElementById("results-input").value = query;
-    // URLにクエリを反映（ブラウザの戻るボタンで戻れるように）
     history.pushState({ query }, "", `?q=${encodeURIComponent(query)}`);
 }
+
 
 // ── ホームに戻る ──
 function goHome() {
@@ -278,51 +342,43 @@ function goHome() {
     history.pushState({ view: "home" }, "", "./");
 }
 
+
 // ── イベント登録 ──
 document.addEventListener("DOMContentLoaded", async () => {
     await loadIndex();
 
-    // ホームの検索ボタン
     document.getElementById("main-btn").addEventListener("click", () => {
         doSearch(document.getElementById("main-input").value);
     });
-
-    // ホームのEnterキー
     document.getElementById("main-input").addEventListener("keydown", e => {
         if (e.key === "Enter") doSearch(e.target.value);
     });
 
-    // 結果ページの検索ボタン
     document.getElementById("results-btn").addEventListener("click", () => {
         doSearch(document.getElementById("results-input").value);
     });
-
-    // 結果ページのEnterキー
     document.getElementById("results-input").addEventListener("keydown", e => {
         if (e.key === "Enter") doSearch(e.target.value);
     });
 
-    // ロゴクリックでホームに戻る
     document.querySelector(".header-logo").addEventListener("click", e => {
         e.preventDefault();
         goHome();
     });
 
-    // URLパラメータ ?q=xxx があれば起動時に検索
     const params = new URLSearchParams(location.search);
     const q = params.get("q");
     if (q) doSearch(q);
 });
+
 
 // ── ブラウザバック対応 ──
 window.addEventListener("popstate", (e) => {
     if (e.state && e.state.view === "home") {
         goHome();
     } else if (!document.getElementById("home-view").classList.contains("hidden")) {
-        // すでにホーム表示の場合は何もしない
         return;
     } else {
-        // 検索結果表示中にバックボタンでホームに戻る
         goHome();
     }
 });

@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>エラー — Alfog</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="error.css">
+    <link rel="icon" href="logo.jpg">
+</head>
+
+<body>
+
+    <header>
+        <a class="header-logo" href="index.html">
+            <img src="logo.jpg" alt="Alfog logo" class="header-logo-img">
+            Alfog
+        </a>
+    </header>
+
+    <main>
+        <div class="error-container">
+            <div class="error-divider"></div>
+            <div class="error-code" id="error-code">Error</div>
+            <h1 class="error-name" id="error-name">Something went wrong</h1>
+            <p class="error-desc" id="error-desc">予期しないエラーが発生しました。</p>
+            <a class="home-btn" href="index.html">
+                <svg viewBox="0 0 24 24">
+                    <polyline points="15 18 9 12 15 6" />
+                </svg>
+                Alfog ホームへ戻る
+            </a>
+        </div>
+    </main>
+
+    <footer>
+        <span>© 2025 <a href="https://github.com/Gr3nja" target="_blank">Gr3nja</a>&mdash;All rights reserved.</span>
+    </footer>
+
+    <script>
+        // URLパラメータからエラー情報を受け取る
+        // 例: error.html?code=CORSError&desc=...
+        const params = new URLSearchParams(location.search);
+        const code = params.get("code") || "UnknownError";
+        const desc = params.get("desc") || "予期しないエラーが発生しました。";
+
+        // エラーコードとエラー名の対応表
+        const ERROR_MAP = {
+            CORSError: "CORS Error",
+            ConnectionError: "Connection Error",
+            ParseError: "Parse Error",
+            EncodingError: "Encoding Error",
+            HTTPError: "HTTP Error",
+            UnknownError: "Unknown Error",
+        };
+
+        document.getElementById("error-code").textContent = code;
+        document.getElementById("error-name").textContent = ERROR_MAP[code] || code;
+        document.getElementById("error-desc").textContent = desc;
+        document.title = `${code} — Alfog`;
+    </script>
+
+</body>
+
+</html>
