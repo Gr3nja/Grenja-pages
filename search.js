@@ -175,12 +175,17 @@ async function loadIndex() {
 function search(query) {
     if (!query.trim()) return [];
 
-    const keywords = query.trim().toLowerCase().split(/\s+/);
+    const normalizedQuery = query.trim().toLowerCase();
+    const keywords = normalizedQuery.split(/\s+/);
 
     return searchIndex
         .map(item => {
             const title = (item.title || "").toLowerCase();
             const url = (item.url || "").toLowerCase();
+
+            // ── 完全一致ティア（最優先） ──
+            // クエリ全体がタイトルと完全一致
+            const isExactMatch = title === normalizedQuery;
 
             let score = 0;
             let titleMatchCount = 0;
@@ -190,18 +195,22 @@ function search(query) {
                 if (url.includes(kw)) score += 1;
             }
 
+            // titleTier: 2=全キーワード一致, 1=一部一致, 0=不一致
             const titleTier = titleMatchCount === keywords.length ? 2
                 : titleMatchCount > 0 ? 1 : 0;
 
-            return { ...item, score, titleTier };
+            return { ...item, score, titleTier, isExactMatch };
         })
         .filter(item => item.score > 0)
         .sort((a, b) => {
+            // 1位: 完全一致
+            if (b.isExactMatch !== a.isExactMatch) return b.isExactMatch - a.isExactMatch;
+            // 2位: タイトルへのキーワード一致数
             if (b.titleTier !== a.titleTier) return b.titleTier - a.titleTier;
+            // 3位: 合計スコア
             return b.score - a.score;
         });
 }
-
 
 // ── 結果を表示 ──
 function renderResults(results, query, page = 1) {
